@@ -29,7 +29,8 @@ func main(){
 		// each call to the function
 		go checkLink(link , c)
 	}
-	// it's kinda blockage to code so we exit after printink one link
+	// it's kinda blockage to code so we exit after printing one link
+	
 	for l := range c {
 		//funtion literal
 		go func(l string){
@@ -38,6 +39,11 @@ func main(){
 		}(l)
 	}
 	// fmt.Println("kyabbatay")
+
+	// for {
+	// 	time.Sleep(5*time.Second) 
+	// 	go checkLink(<-c,c)
+	// }
 
 
 }
