@@ -20,7 +20,7 @@ func main() {
 		fmt.Println("Goroutine 2")
 	}()
 
-	go func() {
+	func() {
 		defer wg.Done()
 		fmt.Println("Goroutine 3")
 	}()
