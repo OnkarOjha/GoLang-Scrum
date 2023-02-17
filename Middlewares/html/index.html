@@ -1,0 +1,16 @@
+<html>
+    <head>
+        <title>Index</title>
+    </head>
+    <body>
+        Full Name : {{upper .fullname}}
+        <h1>So hereby we will reflect the Product details: </h1>
+        <h2> <b>Product Id : </b>{{.products.Id}}  </h2>
+        <h2><b>Product Name: </b> {{.products.Name}}  </h2>
+        <h2><b>Product Price : </b> {{.products.Price}}  </h2>
+        <h2> <b>Product Quantity : </b>{{.products.Quantity}}  </h2>
+        <h2> <b>Total: </b>{{total .products}}  </h2>
+        <h2> <b>Product Status: </b>{{displayStatus .products.Status}}  </h2>
+        <h2> {{checkStock .products}} </h2>
+    </body>
+</html>
