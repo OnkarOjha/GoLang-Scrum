@@ -16,6 +16,7 @@ func main() {
 	// in simple language we can do this by creating a simple servermux
 	mux := http.NewServeMux()
 	// now use this mux to run our home route
+	
 	mux.HandleFunc("/", home)
 	// mux.Handle("/product", logRequestMiddleware(http.HandlerFunc(productHandler)))
 	mux.HandleFunc("/user", userHandler)
