@@ -8,5 +8,5 @@ type Product struct {
 }
 
 type Inventory struct{
-	Products Product
+	Products []Product
 }

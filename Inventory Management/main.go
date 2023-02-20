@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	//  product "main/modules"
+	// product "main/modules"
 	"os"
 )
 
@@ -15,6 +15,7 @@ type Product struct {
 
 type Inventory struct {
 	Products []Product
+	Total float64
 }
 
 var inv Inventory
@@ -29,7 +30,7 @@ func main() {
 	}
 	displayInventory(inventory)
 	for {
-		fmt.Println("Enter your command:")
+		fmt.Println("Enter your command: (add/remove/display/update/Product add /Product remove/exit) ")
 		var command string
 		fmt.Scanln(&command)
 		switch command {
@@ -51,8 +52,36 @@ func main() {
 			var product Product
 			inventory.update(product)
 			displayInventory(inventory)
+		// sales module
+
+	case "Product add":
+		fmt.Println("Adding products to your cart")
+
+		fmt.Println("List of products that are in inventory are..")
+		displayInventory(inventory)
+
+		fmt.Println("Enter the product name you want to add to your cart:")
+		var name string
+		var quantity int
+		fmt.Scanln(&name)
+		fmt.Println("Enter the quantity you bought: ")
+		fmt.Scanln(&quantity)
+
+		inventory.AddToCart(name, quantity)
+		displayInventory(inventory)
+
+	case "Product remove":
+		fmt.Println("Removing product from cart....")
+		var name string
+		fmt.Println("Enter the name of the product you want to delete...")
+		fmt.Scanln(&name)
+		inventory.RemoveFromCart(name)
+		displayInventory(inventory)
+
 		case "exit":
 			os.Exit(0)
+		case "default":
+			fmt.Println("invalid input")
 		}
 	}
 
@@ -106,7 +135,6 @@ func (i *Inventory) removeProduct(id int) bool {
 		}
 	}
 	return false
-
 }
 
 func (i *Inventory) addProduct(p Product) {
@@ -118,4 +146,69 @@ func displayInventory(i *Inventory) {
 		fmt.Printf("ID: %d, Name: %s, Price: %.2f, Quantity: %d\n", product.ID, product.Name, product.Price, product.Quantity)
 	}
 	fmt.Println()
+}
+
+
+//sales module fucntions
+
+func (i *Inventory)AddToCart(name string, quantitySold int) {
+	var total float64
+	var found bool
+
+	for j, prod := range i.Products {
+		if prod.Name == name && prod.Quantity >= quantitySold {
+			i.Products[j].Quantity -= quantitySold
+			i.Products = append(i.Products, Product{
+				ID:       prod.ID,
+				Name:     prod.Name,
+				Price:    prod.Price,
+				Quantity: quantitySold,
+			})
+			total += float64(quantitySold) * prod.Price
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		fmt.Println("No product found with name: ", name)
+		return
+	}
+
+	i.Total += total
+	fmt.Println("Added to cart sucessfully..")
+}
+
+func (i *Inventory)RemoveFromCart(name string) {
+
+	var quant int
+	var found bool
+	for j, prod := range i.Products {
+		if prod.Name == name {
+			i.Products = append(i.Products[:j], i.Products[j+1:]...)
+			quant = prod.Quantity
+			found = true
+			break
+		}
+	}
+	if !found {
+		fmt.Println("No product found in cart with name: ", name)
+		return
+	}
+
+	//updating the qunatity
+	for j, prod := range i.Products {
+		if prod.Name == name {
+			i.Products[j].Quantity += quant
+			break
+		}
+	}
+
+	//updating the total
+	var total float64 = 0
+	for _, prod := range i.Products {
+		total += prod.Price * float64(prod.Quantity)
+	}
+	i.Total = total
+
 }
