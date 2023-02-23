@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/websocket"
 )
 
 var upgrader = websocket.Upgrader{
@@ -26,6 +27,17 @@ func reader(conn *websocket.Conn) {
 			log.Println("Error reading message:", err)
 			return
 		}
+		// Broadcast message to all connected clients
+		for client := range clients {
+			if client == conn {
+				continue
+			}
+			err = client.WriteMessage(messageType, p)
+			if err != nil {
+				// Handle error
+				break
+			}
+		}
 
 		if messageType != websocket.TextMessage {
 			log.Println("Unexpected message type:", messageType)
@@ -34,12 +46,14 @@ func reader(conn *websocket.Conn) {
 		// print out that message for clarity
 		fmt.Println("Message received:", string(p))
 
-		if err := conn.WriteMessage(websocket.TextMessage, p); err != nil {
-			fmt.Println(err)
-			return
-		}
+		// if err := conn.WriteMessage(websocket.TextMessage, p); err != nil {
+		// 	fmt.Println(err)
+		// 	return
+		// }
 	}
 }
+
+var clients = make(map[*websocket.Conn]bool)
 
 func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	//This will determine whether or not an incoming request from a different domain is allowed to connect,
@@ -53,6 +67,11 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	}
 	fmt.Println("Client successfully connected")
+	clients[ws] = true
+	defer func() {
+		delete(clients, ws)
+		ws.Close()
+	}()
 	// whenever any client connected to our server it will recieve greeting messgae
 	err = ws.WriteMessage(1, []byte("Hi Client!"))
 	if err != nil {
