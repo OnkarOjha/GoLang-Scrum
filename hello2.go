@@ -2,84 +2,78 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/gorilla/websocket"
 )
 
-type Fetcher interface {
-	// Fetch returns the body of URL and
-	// a slice of URLs found on that page.
-	Fetch(url string) (body string, urls []string, err error)
+
+var upgrader=websocket.Upgrader{
+		ReadBufferSize:  1024,
+        WriteBufferSize: 1024,
+        CheckOrigin: func(r *http.Request) bool {
+            return true
+        },
 }
 
-// Crawl uses fetcher to recursively crawl
-// pages starting with url, to a maximum of depth.
-func Crawl(url string, depth int, fetcher Fetcher) {
-	// TODO: Fetch URLs in parallel.
-	// TODO: Don't fetch the same URL twice.
-	// This implementation doesn't do either:
-	if depth <= 0 {
-		return
-	}
-	body, urls, err := fetcher.Fetch(url)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("found: %s %q\n", url, body)
-	for _, u := range urls {
-		Crawl(u, depth-1, fetcher)
-	}
-	return
+
+
+func home (w http.ResponseWriter,r *http.Request){
+
+	fmt.Fprintf(w, "Hello, home!")
+}
+
+
+func reader(conn *websocket.Conn){
+
+	for{
+		messageType,mess,err:=conn.ReadMessage()
+		if err!=nil {
+
+			fmt.Println(err)
+			
+		}
+
+		fmt.Println(string(mess))
+
+		if err:=conn.WriteMessage(messageType,mess); err!=nil{
+
+			log.Println(err)
+			return
+		}
+
+
+
+	   }
+}
+
+
+
+func wsEndpoint (w http.ResponseWriter,r *http.Request){
+
+	// fmt.Fprintf(w, "Hello, endpoint!")
+	ws, err := upgrader.Upgrade(w, r, nil)
+    if err!= nil {
+        fmt.Println(err)
+        return
+    }
+
+
+   reader(ws)
+}
+
+func setupRoutes(){
+
+	http.HandleFunc("/",home)
+	http.HandleFunc("/ws",wsEndpoint)
 }
 
 func main() {
-	Crawl("https://golang.org/", 4, fetcher)
-}
 
-// fakeFetcher is Fetcher that returns canned results.
-type fakeFetcher map[string]*fakeResult
+	fmt.Println("welcome to websockets")
+	setupRoutes()
+	http.ListenAndServe(":8080",nil)
 
-type fakeResult struct {
-	body string
-	urls []string
-}
 
-func (f fakeFetcher) Fetch(url string) (string, []string, error) {
-	if res, ok := f[url]; ok {
-		return res.body, res.urls, nil
-	}
-	return "", nil, fmt.Errorf("not found: %s", url)
-}
-
-// fetcher is a populated fakeFetcher.
-var fetcher = fakeFetcher{
-	"https://golang.org/": &fakeResult{
-		"The Go Programming Language",
-		[]string{
-			"https://golang.org/pkg/",
-			"https://golang.org/cmd/",
-		},
-	},
-	"https://golang.org/pkg/": &fakeResult{
-		"Packages",
-		[]string{
-			"https://golang.org/",
-			"https://golang.org/cmd/",
-			"https://golang.org/pkg/fmt/",
-			"https://golang.org/pkg/os/",
-		},
-	},
-	"https://golang.org/pkg/fmt/": &fakeResult{
-		"Package fmt",
-		[]string{
-			"https://golang.org/",
-			"https://golang.org/pkg/",
-		},
-	},
-	"https://golang.org/pkg/os/": &fakeResult{
-		"Package os",
-		[]string{
-			"https://golang.org/",
-			"https://golang.org/pkg/",
-		},
-	},
 }
