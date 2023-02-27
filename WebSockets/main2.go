@@ -64,10 +64,17 @@ var connCount int
 var isOpen bool
 
 func wsEndpoint(w http.ResponseWriter, r *http.Request) {
-	
+	// ^ picking data from params
+	token := r.URL.Query()["token"]
+	tokenString := ""
+	for _, v := range token {
+		tokenString += v
+	}
+
 
 	//^ check if client is signed in or not
 	cookie, err := r.Cookie("signedIn")
+	fmt.Println("cookie: ",cookie)
     if err == nil && cookie.Value == "true" {
         signedIn = true
     }
@@ -83,6 +90,14 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	//We can now start attempting to upgrade the incoming HTTP connection using the upgrader.Upgrade() function
 	//which will take in the Response Writer and the pointer to the HTTP Request and return us with a pointer to a WebSocket connection,
 	//or an error if it failed to upgrade.
+	// ek new instance intialize kro Claims ka
+	// lekin agr cookie ayi hai to sbse pehle JWT Token string utahynge
+	
+	// fmt.Println("claims", claims.Username)
+	// uName = claims.Username
+
+	// lekin agr cookie ayi hai to sbse pehle JWT Token string utahynge
+	
 	
 	ws, err := upgrader.Upgrade(w, r, nil)
 	isOpen = true
@@ -99,7 +114,12 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(connCount)
 	fmt.Println("Client successfully connected")
+	// claims := &Claims{}
+	// fmt.Println("claims:", claims)
 	clients[ws] = true
+	// c, err := r.Cookie("token")
+
+	// fmt.Println("cookie usernmae", c.Username)
 	for isOpen{
 		
 		defer func() {
@@ -112,7 +132,7 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 		err = ws.WriteMessage(1, []byte("Hi " + uName))
 		if err != nil {
 			log.Println(err)
-		}content
+		}
 		// listen indefinitely for new messages coming
 		// through on our WebSocket connection
 		reader(ws)
@@ -202,6 +222,8 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 		Expires: expirationTime,
 		
 	})
+	// sending the token requst
+	w.Write([]byte(tokenString))
 
 }
 
@@ -232,6 +254,9 @@ func Welcome(w http.ResponseWriter, r *http.Request) {
 		// ?agar match kr gya to return kro jwtKey jisem actual signature hai
 		return jwtKey, nil
 	})
+	// fmt.Println("claims", claims.Username)
+	// uName = claims.Username
+
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
 			w.WriteHeader(http.StatusUnauthorized)
