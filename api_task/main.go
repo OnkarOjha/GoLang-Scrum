@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +13,14 @@ import (
 
 func HandleHome(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("We are handling API calls"))
+}
+
+type Temp struct {
+	T float64 `json:"temp"`
+}
+
+type weathyer struct {
+	Main Temp `json:"main"`
 }
 
 // const url = "https://api.openweathermap.org/data/2.5/forecast?id=524901&appid=4bcee6ca2132a9808f9b4fe9f0290ea2"
@@ -38,6 +47,7 @@ func ApiHandlerChan(w http.ResponseWriter, r *http.Request) {
 		defer res.Body.Close()
 
 		read, err := ioutil.ReadAll(res.Body)
+		fmt.Println("")
 		if err != nil {
 			errChan <- errors.New("Error while Reading  data in datachan")
 		}
@@ -51,7 +61,7 @@ func ApiHandlerChan(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("There was an error: ", err)
 	case data := <-readChan:
 		w.Write([]byte(data))
-	case <-time.After(1 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		w.Write([]byte("timeout"))
 	}
 
@@ -75,7 +85,13 @@ func ApiHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "error reading response", http.StatusInternalServerError)
 	}
-	fmt.Println("data : ", string(data))
+
+	// fmt.Println("data : ", data)
+	var temp weathyer
+
+	json.Unmarshal(data, &temp)
+	// json.NewDecoder(res.Body).Decode(&temp)
+	fmt.Println("temp:", temp.Main.T)
 	w.Write([]byte(data))
 
 	// err = json.NewDecoder(res.Body).Decode(&struct)

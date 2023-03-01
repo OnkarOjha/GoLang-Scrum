@@ -63,3 +63,4 @@ func main() {
 		}
 	}
 }
+// ker build -t go-waku:latest .
