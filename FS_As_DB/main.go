@@ -18,7 +18,4 @@ func main() {
 	http.HandleFunc("/delete/", cont.DeleteClient)
 	http.HandleFunc("/read", cont.ReadClient)
 	log.Fatal(http.ListenAndServe(":8000", nil))
-
-	// ^now creating a file and putting this information into it
-
 }
