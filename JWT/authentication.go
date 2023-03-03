@@ -113,8 +113,10 @@ func Welcome(w http.ResponseWriter, r *http.Request) {
 	// !then we will return an "Unauthorized" error
 	tkn , err := jwt.ParseWithClaims(tknStr , claims , func(token *jwt.Token)(interface{} , error){
 		// ?agar match kr gya to return kro jwtKey jisem actual signature hai
+		fmt.Println("  mftgjyelkigy:",token)
 		return jwtKey , nil
 	})
+	fmt.Println("token: ", tkn)
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -152,6 +154,7 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	})
+	fmt.Println("token: ", tkn)
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -218,5 +221,5 @@ func main() {
 	http.HandleFunc("/logout", Logout)
 
 	// start the server on port 8000
-	log.Fatal(http.ListenAndServe(":8000", nil))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
