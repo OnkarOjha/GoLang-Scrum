@@ -1,5 +1,6 @@
 package main
 
+
 import (
 	"encoding/json"
 	"fmt"
@@ -8,35 +9,18 @@ import (
 	"sort"
 	"strconv"
 	"time"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	models "main/models"
 )
 
-type MemberInfo struct {
-	Id             int     `json:"id"`
-	Name           string  `json:"name"`
-	Membership     string  `json:"membership"`
-	StartDate      string  `json:"startDate"`
-	EndDate        string  `json:"endDate"`
-	MoneySubmitted float64 `json:"moneySubmitted"`
-	MonthlyPrice   float64 `json:"monthlyPrice"`
-	Duration       float64 `json:"duration"`
-	IsDeleted      bool    `json:"isDeleted"`
-	RefundedMoney  float64 `json:"refundedMoney"`
-}
 
-type Price struct {
-	Gold   float64
-	Silver float64
-}
-
-var membershipPrice = &Price{
-	Gold:   2000,
-	Silver: 1000,
-}
+var DB *gorm.DB
 
 // ^DUMMY MEMBERS
-var memberships []MemberInfo = []MemberInfo{
-	{Id: 1, Name: "Onkar", Membership: "Gold", StartDate: "2023-01-01", EndDate: "2023-03-01", MoneySubmitted: 12000, MonthlyPrice: 2000, Duration: 4, IsDeleted: false},
-	{Id: 2, Name: "Aman", Membership: "Silver", StartDate: "2023-02-01", EndDate: "2023-05-01", MoneySubmitted: 6000, MonthlyPrice: 1000, Duration: 5},
+var memberships []models.MemberInfo = []models.MemberInfo{
+	{Id: "1", Name: "Onkar", Membership: "Gold", StartDate: "2023-01-01", EndDate: "2023-03-01", MoneySubmitted: 12000, MonthlyPrice: 2000, Duration: 4, IsDeleted: false},
+	{Id: " 2", Name: "Aman", Membership: "Silver", StartDate: "2023-02-01", EndDate: "2023-05-01", MoneySubmitted: 6000, MonthlyPrice: 1000, Duration: 5},
 }
 
 func EnrollHandler(w http.ResponseWriter, r *http.Request) {
@@ -48,20 +32,24 @@ func EnrollHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("Please send some data!!!")
 
 	}
-
-	var member MemberInfo
+	var price models.Price
+	var member  models.MemberInfo
 	_ = json.NewDecoder(r.Body).Decode(&member)
-	// fmt.Println("data: ", member)
-	member.Id = len(memberships) + 1
+
 	//^ membership check
 	if member.Membership == "Gold" {
 		// monthly price and duration set krna hai
-		member.Duration = member.MoneySubmitted / membershipPrice.Gold
-		member.MonthlyPrice = membershipPrice.Gold
+		DB.Where("name = ?", "Gold").First(&price)
+
+		fmt.Println("price: ", price.Price)
+		member.Duration = member.MoneySubmitted / price.Price
+		member.MonthlyPrice = price.Price
 	} else if member.Membership == "Silver" {
 		// monthly price and duration set krna hai
-		member.Duration = member.MoneySubmitted / membershipPrice.Silver
-		member.MonthlyPrice = membershipPrice.Silver
+		DB.Where("name = ?", "Silver").First(&price)
+		fmt.Println("price: ", price.Price)
+		member.Duration = member.MoneySubmitted / price.Price
+		member.MonthlyPrice = price.Price
 	} else {
 		http.Error(w, "Membership could be either Gold or Silver!!!", http.StatusMethodNotAllowed)
 		return
@@ -97,6 +85,14 @@ func EnrollHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("refunded: ", member.RefundedMoney)
 	}
 
+	// inserting the newly created member into the databaseimport (
+
+	result := DB.Create(&member)
+	if result.Error != nil {
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	memberships = append(memberships, member)
 
 	// Handle enrollment logic here
@@ -112,7 +108,12 @@ func ShowMembersHandler(w http.ResponseWriter, r *http.Request) {
 		return memberships[i].Id < memberships[j].Id
 	})
 
-	// Handle reading logic here
+	// Reading from DB
+	result := DB.Unscoped().Find(&memberships)
+	if result.Error != nil {
+		http.Error(w, "Reading users failed", http.StatusNotFound)
+		return
+	}
 	json.NewEncoder(w).Encode(memberships) // this will send response as a json value
 
 	fmt.Fprintf(w, "Reading successful")
@@ -128,12 +129,14 @@ func EndMembershipHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Please enter your Id in params")
 
 	params := r.URL.Query().Get("id")
+	id, _ := strconv.Atoi(params)
+	fmt.Println("id: ", id)
 	now := time.Now().Truncate(24 * time.Hour)
+
 	for i, member := range memberships {
-		id, _ := strconv.Atoi(params)
-		if member.Id == id {
-			// memberships = append(memberships[:index], memberships[index+1:]...)
-  
+
+		if member.Id == params {
+
 			//^ money return calculation
 			startDate, err := time.Parse("2006-01-02", member.StartDate)
 			if err != nil {
@@ -152,51 +155,61 @@ func EndMembershipHandler(w http.ResponseWriter, r *http.Request) {
 			memberships = append(memberships, member)
 			memberships = append(memberships[:i], memberships[i+1:]...)
 
+			DB.Where("id =?", params).Updates(& models.MemberInfo{RefundedMoney: MoneyRefund / 2, Duration: float64(days / 30), EndDate: now.Format("2006-01-02"), IsDeleted: true})
+			DB.Where("id=?", params).Delete(&member)
+
 			json.NewEncoder(w).Encode(member)
 
 			break
 
 		}
-		// w.Write([]byte("You have successfully ended your membership"))
+
 	}
 
 }
 
 func MembershipPriceShowHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hy Welcome here are our Membership Prices")
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(membershipPrice) // this
+	var memPrice []models.Price
+	result := DB.Find(&memPrice)
+	if result.Error != nil {
+		http.Error(w, "Reading users failed", http.StatusNotFound)
+		return
+	}
+	json.NewEncoder(w).Encode(memPrice)
 }
 
 func MembershipPriceUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Now you can update membership prices!!")
 
-	decoder := json.NewDecoder(r.Body)
-	defer r.Body.Close()
-	var data struct {
-		Gold   float64 `json:"gold"`
-		Silver float64 `json:"silver"`
-	}
-
-	if err := decoder.Decode(&data); err != nil {
+	var memPrice  models.Price
+	err := json.NewDecoder(r.Body).Decode(&memPrice)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// ^ sirf ek value change krni hai or dusri nhi
-	if data.Gold == 0.0 {
-		data.Gold = membershipPrice.Gold
-	} else if data.Silver == 0.0 {
-		data.Silver = membershipPrice.Silver
-	}
-	membershipPrice.Gold = data.Gold
-	membershipPrice.Silver = data.Silver
+
+	DB.Model(&models.Price{}).Where("name=?", memPrice.Name).Updates(&memPrice)
+	json.NewEncoder(w).Encode(memPrice)
 
 	fmt.Fprint(w, "Membership prices updated")
 
 }
 
+
 func main() {
 	fmt.Println("Implementing GYM membership Task...")
+
+	// implementing DB
+	dsn := "host=localhost port=5432 user=postgres password=Onkar17082001 dbname=gym sslmode=disable TimeZone=Asia/Shanghai"
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic("error connecting to the database")
+	}
+
+	db.AutoMigrate(&models.MemberInfo{}, &models.Price{})
+	DB = db
+
 	r := http.NewServeMux()
 	r.HandleFunc("/enroll", EnrollHandler)
 	r.HandleFunc("/members", ShowMembersHandler)
