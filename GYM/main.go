@@ -50,10 +50,7 @@ func SubscriptionHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("params: ", params)
 
 	var subscription models.Subscription
-	err := json.NewDecoder(r.Body).Decode(&subscription)
-	if err!=nil{
-		fmt.Println("err: ", err)
-	}
+	_ = json.NewDecoder(r.Body).Decode(&subscription)
 	// ? user_id set from params
 
 	subscription.User_id = params
@@ -238,44 +235,6 @@ func ShowUsersHandler(w http.ResponseWriter, r *http.Request) {
 	DB.Joins("User").Find(&show)
 	json.NewEncoder(w).Encode(&show)
 }
-
-func UserShowHandler(w http.ResponseWriter, r *http.Request) {
-	// this will show user info full and user susbcriptons information
-
-	// this will show user info full and user susbcriptons information
-	id := r.URL.Query().Get("id")
-	fmt.Println("id: ", id)
-	w.Header().Set("Content-Type", "application/json")
-
-	var user models.Subscription
-	DB.Joins("User").Joins("Payment").Omit("User").Where("subscriptions.user_id = ?", id).First(&user)
-
-	json.NewEncoder(w).Encode(&user)
-	// id := r.URL.Query().Get("id")
-	// fmt.Println("id: ", id)
-	// w.Header().Set("Content-Type", "application/json")
-	// var user models.Users
-	// var subscriptions []models.Subscription
-	// DB.Where("user_id =?", id).First(&user)
-
-	// // retrieve the payment details for the user
-	// var payment models.Payment
-	// DB.Omit("User").Where("user_id = ?", id).First(&payment)
-
-	// // retrieve the full subscription details for the user
-	// DB.Omit("User","Payments").Where("user_id = ?", id).Find(&subscriptions)
-
-	// // create a map to hold the user, payment, and subscription details
-	// userMap := make(map[string]interface{})
-	// userMap["user"] = user
-	// userMap["payment"] = payment
-	// userMap["subscriptions"] = subscriptions
-
-	// // encode the map as JSON and send it in the response
-	// json.NewEncoder(w).Encode(userMap)
-
-}
-
 
 func EnrollHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -466,23 +425,13 @@ func main() {
 	DB = db
 
 	r := http.NewServeMux()
-	// r.HandleFunc("/user", UserEnrollment)
-	// r.HandleFunc("/subscription", SubscriptionHandler)
-	// r.HandleFunc("/endSubs", EndSubscriptionHandler)
-	// r.HandleFunc("/employee", EmployeeHandler)
-	// r.HandleFunc("/payment", PaymentHandler)
-	// r.HandleFunc("/equipment", EquipementHandler)
-	// r.HandleFunc("/show", ShowUsersHandler)
-
 	r.HandleFunc("/user", UserEnrollment)
-	r.HandleFunc("/user/subscription", SubscriptionHandler)
-	r.HandleFunc("/user/endSubs", EndSubscriptionHandler)
+	r.HandleFunc("/subscription", SubscriptionHandler)
+	r.HandleFunc("/endSubs", EndSubscriptionHandler)
 	r.HandleFunc("/employee", EmployeeHandler)
-	r.HandleFunc("/user/payment", PaymentHandler)
+	r.HandleFunc("/payment", PaymentHandler)
 	r.HandleFunc("/equipment", EquipementHandler)
-	r.HandleFunc("/users/show", ShowUsersHandler)
-	r.HandleFunc("/users/showByID", UserShowHandler)
-
+	r.HandleFunc("/show", ShowUsersHandler)
 	r.HandleFunc("/enroll", EnrollHandler)
 	r.HandleFunc("/members", ShowMembersHandler)
 	r.HandleFunc("/end", EndMembershipHandler)

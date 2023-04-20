@@ -75,41 +75,41 @@ import (
 
 
 
-func main(){
-	fmt.Println("Validation with map")
-	c := map[string]interface{}{
-		"name" : "Onkar",
-		"email": "onkar@gmail.com",
-		"age" : 22,
-		"address" : map[string]interface{}{
-			"country" : "India",
-			"state" : "Jharkhand",
-			"pincode" : "828135",
-		},
-	}
+// func main(){
+// 	fmt.Println("Validation with map")
+	// c := map[string]interface{}{
+	// 	"name" : "Onkar",
+	// 	"email": "onkar@gmail.com",
+	// 	"age" : 22,
+	// 	"address" : map[string]interface{}{
+	// 		"country" : "India",
+	// 		"state" : "Jharkhand",
+	// 		"pincode" : "828135",
+	// 	},
+	// }
 
-	// now lets validate the map	
-	err := validation.Validate(c,
-		validation.Map(
-			validation.Key("name",validation.Required , validation.Length(5,20)),
-			validation.Key("email" , validation.Required, validation.Match(regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`))),
-			validation.Key("age", validation.Required, validation.Min(1) , validation.Max(100)),
-			validation.Key("address",
-			validation.Map(
-				validation.Key("country",validation.Required , validation.Match(regexp.MustCompile(`^[a-z]*[A-Z][a-z]*$`))),
-				validation.Key("state",validation.Required , validation.Match(regexp.MustCompile(`^[a-z]*[A-Z][a-z]*$`))),
-				validation.Key("pincode",validation.Required , validation.Match(regexp.MustCompile(`^[0-9]{6}$`))),
+	// // now lets validate the map	
+	// err := validation.Validate(c,
+	// 	validation.Map(
+	// 		validation.Key("name",validation.Required , validation.Length(5,20)),
+	// 		validation.Key("email" , validation.Required, validation.Match(regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`))),
+	// 		validation.Key("age", validation.Required, validation.Min(1) , validation.Max(100)),
+	// 		validation.Key("address",
+	// 		validation.Map(
+	// 			validation.Key("country",validation.Required , validation.Match(regexp.MustCompile(`^[a-z]*[A-Z][a-z]*$`))),
+	// 			validation.Key("state",validation.Required , validation.Match(regexp.MustCompile(`^[a-z]*[A-Z][a-z]*$`))),
+	// 			validation.Key("pincode",validation.Required , validation.Match(regexp.MustCompile(`^[0-9]{6}$`))),
 
 
-			),
-		),
-		),
-	)
-	if err!=nil{
-		fmt.Println("Error: ", err)
-	}
-	fmt.Println("and we have c: ",c)
-}
+	// 		),
+	// 	),
+	// 	),
+	// )
+	// if err!=nil{
+	// 	fmt.Println("Error: ", err)
+	// }
+	// fmt.Println("and we have c: ",c)
+
 
 	// c := map[string]interface{}{
 	// 	"Name":  "Onkar Ojha",

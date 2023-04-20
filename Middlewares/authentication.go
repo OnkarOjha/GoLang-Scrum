@@ -107,7 +107,7 @@ func userNameCheck(username string) bool {
 	}
 
 	return true
-}
+}d
 
 func passwordCheck(password string) bool {
 
